@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# shellcheck source-path=SCRIPTDIR
+source "$(dirname "${BASH_SOURCE[0]}")/../lib/log.sh"
+# shellcheck source-path=SCRIPTDIR
+source "$(dirname "${BASH_SOURCE[0]}")/../lib/artifacts.sh"
+# shellcheck source-path=SCRIPTDIR
+source "$(dirname "${BASH_SOURCE[0]}")/../lib/rc.sh"
+
+readonly default_root_dir="pulumi"
+root_dir="${BUILDKITE_PLUGIN_GRAPL_RC_PROJECT_ROOT_DIR:-${default_root_dir}}"
+
+# Resolve the artifact file to download
+########################################################################
+if [ -z "${BUILDKITE_PLUGIN_GRAPL_RC_ARTIFACT_FILE:-}" ]; then
+    raise_error "You must specify the name of an artifact file to download from the Buildkite artifact bucket"
+fi
+artifact_file_name="${BUILDKITE_PLUGIN_GRAPL_RC_ARTIFACT_FILE}"
+
+# Read contents of the artifact file
+########################################################################
+contents=$(artifact_contents "${artifact_file_name}")
+echo "--- Retrieved artifact metadata from '${artifact_file_name}'"
+echo "${contents}"
+
+# STOLEN FROM https://github.com/buildkite-plugins/docker-buildkite-plugin/blob/9f90d8ef742d9fa1eb3556720e16f2b842ff1cb2/hooks/command#L25-L47
+#
+# Reads a list from plugin config into a global result array
+# Returns success if values were read
+plugin_read_list_into_result() {
+    result=()
+
+    for prefix in "$@"; do
+        local i=0
+        local parameter="${prefix}_${i}"
+
+        if [[ -n "${!prefix:-}" ]]; then
+            echo ":rotating_light: Plugin received a string for $prefix, expected an array" >&2
+            exit 1
+        fi
+
+        while [[ -n "${!parameter:-}" ]]; do
+            result+=("${!parameter}")
+            i=$((i + 1))
+            parameter="${prefix}_${i}"
+        done
+    done
+
+    [[ ${#result[@]} -gt 0 ]] || return 1
+}
+
+# Resolve the list of stacks
+########################################################################
+if ! plugin_read_list_into_result BUILDKITE_PLUGIN_GRAPL_RC_STACKS; then
+    raise_error "You must specify at least one Pulumi stack to operate on"
+fi
+
+echo "--- Creating new release candidate"
+create_rc "${contents}" "${root_dir}" "${result[@]}"

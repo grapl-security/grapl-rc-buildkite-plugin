@@ -1,0 +1,59 @@
+[GLOBAL]
+pants_version = "2.8.0"
+backend_packages = [
+    "pants.backend.shell",
+    "pants.backend.shell.lint.shellcheck",
+    "pants.backend.shell.lint.shfmt",
+    # "pants.backend.experimental.docker",
+    # "pants.backend.experimental.docker.lint.hadolint",
+    # "pants.backend.python",
+    # "pants.backend.python.lint.black",
+    # "pants.backend.python.lint.flake8",
+    # "pants.backend.python.lint.isort",
+    # "pants.backend.python.typecheck.mypy",
+]
+
+pants_ignore = [
+    "!.buildkite/"
+]
+
+plugins = [
+  "toolchain.pants.plugin==0.14.0"
+]
+
+remote_cache_read = true
+remote_cache_write = true
+remote_store_address = "grpcs://cache.toolchain.com:443"
+remote_auth_plugin = "toolchain.pants.auth.plugin:toolchain_auth_plugin"
+
+[toolchain-setup]
+repo = "grapl-rc-buildkite-plugin"
+
+[buildsense]
+enable = true
+
+# See https://www.pantsbuild.org/docs/anonymous-telemetry
+[anonymous-telemetry]
+enabled = true
+# Randomly generated with `uuidgen --random`
+repo_id = "bfc025d9-b0d8-4771-aeec-684cbb4d86f6"
+
+[shfmt]
+# Indent with 4 spaces
+# Indent switch cases
+# Redirect operators are followed by a space
+args = ["-i 4", "-ci", "-sr"]
+
+[test]
+output = "all"
+
+[shellcheck]
+# Currently, Pants only knows about v0.7.1, but v0.7.2 has some nice
+# relative sourcing features we'd like to take advantage of (namely,
+# `script-path=SOURCEDIR`). Once Pants knows about v0.7.2 natively, we
+# can remove these configuration values.
+version = "v0.7.2"
+known_versions = [
+  "v0.7.2|macos_x86_64|969bd7ef668e8167cfbba569fb9f4a0b2fc1c4021f87032b6a0b0e525fb77369|3988092",
+  "v0.7.2|linux_x86_64|70423609f27b504d6c0c47e340f33652aea975e45f312324f2dbf91c95a3b188|1382204"
+]
