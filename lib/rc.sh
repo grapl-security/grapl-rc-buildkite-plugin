@@ -36,7 +36,11 @@ add_artifacts() {
     # iteration. So... we just won't use standard input.)
     readarray -t lines < <(jq -r 'to_entries | .[] | [.key, .value] | @tsv' <<< "${flattened_input_json}")
 
-    for line in "${lines[@]}"; do
+    # TODO: This ugly expansion can go away once we have Bash 4.4+ in
+    # CI/CD (This handles the case when the input JSON is an empty
+    # object)
+    # See https://git.savannah.gnu.org/cgit/bash.git/tree/CHANGES?id=3ba697465bc74fab513a26dea700cc82e9f4724e#n878
+    for line in "${lines[@]+${lines[@]}}"; do
         IFS=$'\t' read -r key value <<< "${line}"
         pulumi config set \
             --path "artifacts.${key}" \
