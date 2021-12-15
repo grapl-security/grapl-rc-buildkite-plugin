@@ -105,4 +105,3 @@ some non-standard Pulumi reference, like `project/stack`.)
 Requires `make`, `docker`, and `docker-compose`.
 
 Running `make` will run all formatting, linting, and testing.
->>>>>>> 0137228... Initial plugin implementation

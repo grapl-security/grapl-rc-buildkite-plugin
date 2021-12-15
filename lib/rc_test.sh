@@ -46,7 +46,7 @@ oneTimeSetUp() {
     export BUILDKITE_BUILD_URL="https://buildkite.com/grapl/pipeline-infrastructure-verify/builds/2112"
     export ALL_COMMANDS="${SHUNIT_TMPDIR}/all_commands"
     export GIT_AUTHOR_NAME="Testy McTestface"
-    export GIT_AUTHOR_EMAIL="tests@tests.com"
+    export GIT_AUTHOR_EMAIL="tests@example.com"
 
     # shellcheck source-path=SCRIPTDIR
     source "$(dirname "${BASH_SOURCE[0]}")/rc.sh"
@@ -235,7 +235,7 @@ test_create_rc_webhook() {
 pulumi login
 git checkout rc
 git config user.name Testy McTestface
-git config user.email tests@tests.com
+git config user.email tests@example.com
 git merge --no-ff --no-commit --strategy=recursive --strategy-option=ours main
 pulumi config get artifacts --cwd=pulumi/cicd --stack=myorg/cicd/production
 git show main:pulumi/cicd/Pulumi.production.yaml

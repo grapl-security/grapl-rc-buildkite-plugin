@@ -30,7 +30,7 @@ teardown() {
     export BUILDKITE_SOURCE=webhook
 
     export GIT_AUTHOR_NAME="Testy McTestface"
-    export GIT_AUTHOR_EMAIL="tests@tests.com"
+    export GIT_AUTHOR_EMAIL="tests@example.com"
 
     artifact_content='{"foo": "1.2.3", "bar": "4.5.6"}'
 
@@ -48,7 +48,7 @@ teardown() {
 
     stub git "checkout rc : echo 'checking out rc'" \
          "config user.name 'Testy McTestface' : echo 'set user.name'" \
-         "config user.email tests@tests.com : echo 'set user.email'" \
+         "config user.email tests@example.com : echo 'set user.email'" \
          "merge --no-ff --no-commit --strategy=recursive --strategy-option=ours main : echo 'begin merge'" \
          "show main:pulumi/cicd/Pulumi.production.yaml : echo 'FAKE PRODUCTION STACK CONFIGURATION'" \
          "add --verbose pulumi/cicd/Pulumi.production.yaml : echo 'add stack file'" \
