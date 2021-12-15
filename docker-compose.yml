@@ -1,0 +1,21 @@
+version: "3.8"
+
+x-common-variables:
+  read-only-plugin: &read-only-plugin
+    # Buildkite containers assume you mount into /plugin
+    type: bind
+    source: .
+    target: /plugin
+    read_only: true
+
+services:
+  plugin-tester:
+    image: buildkite/plugin-tester:latest # the only available tag
+    volumes:
+      - *read-only-plugin
+
+  plugin-linter:
+    image: buildkite/plugin-linter:latest # the only available tag
+    command: ["--id", "grapl-security/grapl-rc"]
+    volumes:
+      - *read-only-plugin

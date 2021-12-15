@@ -1,0 +1,23 @@
+---
+name: Grapl RC
+description: Create release candidates for Grapl software projects
+author: https://github.com/grapl-security
+requirements: ["bash", "jq"]
+configuration:
+  properties:
+    project_root_dir:
+      description: |
+        The directory that all Pulumi projects are stored in. Defaults
+        to `pulumi`.
+      type: string
+    artifact_file:
+      description: |
+        The name of a Buildkite Artifact file containing a JSON object
+        with artifact names and version to download.
+      type: string
+    stacks:
+      description: |
+        List of Pulumi stacks to update. Must be provided in
+        `organization/project/stack` form.
+      type: array
+  additionalProperties: false
