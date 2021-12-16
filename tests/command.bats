@@ -46,7 +46,10 @@ teardown() {
          "config set --path artifacts.foo 1.2.3 --cwd=pulumi/cicd --stack=myorg/cicd/testing : echo 'set foo in testing'" \
          "config set --path artifacts.bar 4.5.6 --cwd=pulumi/cicd --stack=myorg/cicd/testing : echo 'set bar in testing'"
 
-    stub git "checkout rc : echo 'checking out rc'" \
+    stub git \
+         "remote set-branches --add origin rc : echo 'set-branches'" \
+         "fetch --depth=1 origin rc : echo 'fetch rc'" \
+         "checkout rc : echo 'checking out rc'" \
          "config user.name 'Testy McTestface' : echo 'set user.name'" \
          "config user.email tests@example.com : echo 'set user.email'" \
          "merge --no-ff --no-commit --strategy=recursive --strategy-option=ours main : echo 'begin merge'" \
