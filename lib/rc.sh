@@ -178,6 +178,9 @@ create_rc() {
     # We run our pipelines in Buildkite using shallow clones, which
     # means that checking out a separate branch doesn't work without
     # some extra steps.
+    #
+    # See the `--allow-unrelated-histories` option to `git merge`
+    # below, too.
     git remote set-branches --add origin rc
     git fetch --depth=1 origin rc
     git checkout rc
@@ -196,11 +199,18 @@ create_rc() {
     # involve the Pulumi stack config files, which is exactly what we
     # want). As we process the files further, we'll resolve any
     # semantic changes we truly wish to preserve.
+    #
+    # `--allow-unrelated-histories` will allow us to perform a merge,
+    # even though we've only shallowly-fetched our `main` and `rc`
+    # branches; they will *appear* unrelated based on the current
+    # state of the repository, but we know they really are related in
+    # a full checkout.
     git merge \
         --no-ff \
         --no-commit \
         --strategy=recursive \
         --strategy-option=ours \
+        --allow-unrelated-histories \
         main
 
     for stack_ref in "${stack_references[@]}"; do

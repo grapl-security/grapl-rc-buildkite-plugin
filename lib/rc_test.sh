@@ -238,7 +238,7 @@ git fetch --depth=1 origin rc
 git checkout rc
 git config user.name Testy McTestface
 git config user.email tests@example.com
-git merge --no-ff --no-commit --strategy=recursive --strategy-option=ours main
+git merge --no-ff --no-commit --strategy=recursive --strategy-option=ours --allow-unrelated-histories main
 pulumi config get artifacts --cwd=pulumi/cicd --stack=myorg/cicd/production
 git show main:pulumi/cicd/Pulumi.production.yaml
 git add --verbose pulumi/cicd/Pulumi.production.yaml

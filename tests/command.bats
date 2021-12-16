@@ -52,7 +52,7 @@ teardown() {
          "checkout rc : echo 'checking out rc'" \
          "config user.name 'Testy McTestface' : echo 'set user.name'" \
          "config user.email tests@example.com : echo 'set user.email'" \
-         "merge --no-ff --no-commit --strategy=recursive --strategy-option=ours main : echo 'begin merge'" \
+         "merge --no-ff --no-commit --strategy=recursive --strategy-option=ours --allow-unrelated-histories main : echo 'begin merge'" \
          "show main:pulumi/cicd/Pulumi.production.yaml : echo 'FAKE PRODUCTION STACK CONFIGURATION'" \
          "add --verbose pulumi/cicd/Pulumi.production.yaml : echo 'add stack file'" \
          "show main:pulumi/cicd/Pulumi.testing.yaml : echo 'FAKE TESTING STACK CONFIGURATION'" \
