@@ -233,6 +233,8 @@ test_create_rc_webhook() {
     expected=$(
         cat << EOF
 pulumi login
+git remote set-branches --add origin rc
+git fetch --depth=1 origin rc
 git checkout rc
 git config user.name Testy McTestface
 git config user.email tests@example.com

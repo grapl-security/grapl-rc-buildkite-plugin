@@ -174,6 +174,12 @@ create_rc() {
     pulumi login
 
     echo -e "--- :git: Checking out the rc branch"
+
+    # We run our pipelines in Buildkite using shallow clones, which
+    # means that checking out a separate branch doesn't work without
+    # some extra steps.
+    git remote set-branches --add origin rc
+    git fetch --depth=1 origin rc
     git checkout rc
 
     echo -e "--- :git: Begin merge of main branch to rc"
