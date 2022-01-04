@@ -48,8 +48,10 @@ teardown() {
 
     stub git \
          "remote set-branches --add origin rc : echo 'set-branches'" \
-         "fetch --depth=1 origin rc : echo 'fetch rc'" \
+         "fetch --depth=2 origin rc : echo 'fetch rc'" \
          "checkout rc : echo 'checking out rc'" \
+         "--no-pager show : echo 'showing the tip of rc'" \
+         "log --oneline --decorate --max-count=1 : echo 'deadbeef (HEAD -> rc, origin/rc) Create new release candidate'" \
          "config user.name 'Testy McTestface' : echo 'set user.name'" \
          "config user.email tests@example.com : echo 'set user.email'" \
          "merge --no-ff --no-commit --strategy=recursive --strategy-option=ours --allow-unrelated-histories main : echo 'begin merge'" \

@@ -234,8 +234,10 @@ test_create_rc_webhook() {
         cat << EOF
 pulumi login
 git remote set-branches --add origin rc
-git fetch --depth=1 origin rc
+git fetch --depth=2 origin rc
 git checkout rc
+git --no-pager show
+git log --oneline --decorate --max-count=1
 git config user.name Testy McTestface
 git config user.email tests@example.com
 git merge --no-ff --no-commit --strategy=recursive --strategy-option=ours --allow-unrelated-histories main

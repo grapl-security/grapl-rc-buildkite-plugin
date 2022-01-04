@@ -3,11 +3,21 @@
 set -euo pipefail
 
 # shellcheck source-path=SCRIPTDIR
+source "$(dirname "${BASH_SOURCE[0]}")/log.sh"
+# shellcheck source-path=SCRIPTDIR
 source "$(dirname "${BASH_SOURCE[0]}")/json_tools.sh"
 # shellcheck source-path=SCRIPTDIR
 source "$(dirname "${BASH_SOURCE[0]}")/util.sh"
 # shellcheck source-path=SCRIPTDIR
 source "$(dirname "${BASH_SOURCE[0]}")/pulumi.sh"
+
+# Fail if HEAD is a grafted commit (rather than a real one). If it is,
+# then we didn't fetch the branch sufficiently deeply.
+error_if_grafted() {
+    if git log --oneline --decorate --max-count=1 | grep grafted &> /dev/null; then
+        raise_error "Expected HEAD to be a real commit, but it was a grafted one instead!"
+    fi
+}
 
 # Given a stack reference, a root directory, and a flat JSON object as an input
 # string, adds each key-value pair the Pulumi configuration file for that
@@ -182,8 +192,38 @@ create_rc() {
     # See the `--allow-unrelated-histories` option to `git merge`
     # below, too.
     git remote set-branches --add origin rc
-    git fetch --depth=1 origin rc
+    # We fetch at depth=2 rather than depth=1 because of how Git
+    # shallow checkouts work, and what we need to do in terms of
+    # diffing and merging. With depth=1, that tip commit will be a
+    # "grafted" commit, and will *appear* to contain the entire
+    # history of the repository in that single commit. (The real
+    # history is of course preserved in the full repository, but this
+    # "everything in one commit" is an illusion of the shallow
+    # checkout.)
+    #
+    # As you successively deepen your checkout, however, Git will play
+    # out the real diffs, back to the first commit in the shallow
+    # history. That is, if you checkout with depth=2, the tip will
+    # contain just the diff of that real commit (this commit will NOT
+    # be a grafted commit), while its parent will contain the rest of
+    # the history (and it *will* be a grafted commit). If you checkout
+    # with depth=3, the tip and its parent will be real commits, and
+    # the grandparent will be grafted, and so forth. At the extreme,
+    # if you fetch the entire history, *all* commits will reflect
+    # their real diffs, and there will no longer be any grafted
+    # commits in the history.
+    #
+    # Thus, in order for our merging and diffing logic to behave
+    # properly, we must make sure that the tip of the `rc` branch is a
+    # real, not a grafted, commit. This can be done by fetching with
+    # depth=2.
+    git fetch --depth=2 origin rc
     git checkout rc
+
+    echo -e "--- :git: The tip of the rc branch"
+    # Just want to show what's here as an aid to debugging
+    git --no-pager show
+    error_if_grafted
 
     echo -e "--- :git: Begin merge of main branch to rc"
     # TODO: For some as-yet unknown reason, it appears that we MUST
