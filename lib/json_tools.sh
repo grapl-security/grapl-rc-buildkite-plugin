@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-set -euo pipefail
-
 flatten_json() {
     # The purpose of this module is to convert something like the following json:
     # {
