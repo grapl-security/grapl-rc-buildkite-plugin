@@ -194,7 +194,7 @@ create_rc() {
     git config user.name "${GIT_AUTHOR_NAME}"
     git config user.email "${GIT_AUTHOR_EMAIL}"
 
-    # We use the recursive/ours strategy here to preserve the
+    # We use the ort/ours strategy here to preserve the
     # conflicts from the rc branch preferentially (this should only
     # involve the Pulumi stack config files, which is exactly what we
     # want). As we process the files further, we'll resolve any
@@ -208,7 +208,7 @@ create_rc() {
     git merge \
         --no-ff \
         --no-commit \
-        --strategy=recursive \
+        --strategy=ort \
         --strategy-option=ours \
         --allow-unrelated-histories \
         main
