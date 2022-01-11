@@ -4,7 +4,7 @@ load "$BATS_PATH/load.bash"
 
 # Uncomment to enable stub debugging
 # export PULUMI_STUB_DEBUG=/dev/tty
-# export GIT_STUB_DEBUG=/dev/tty
+# export MKTEMP_STUB_DEBUG=/dev/tty
 # export BUILDKITE_AGENT_STUB_DEBUG=/dev/tty
 
 teardown() {
@@ -18,6 +18,72 @@ teardown() {
 
     unset BUILDKITE_BUILD_URL
     unset BUILDKITE_SOURCE
+}
+
+# Create a (local only) git repository with enough history and
+# structure to simulate a real repository that this plugin might
+# operate on.
+#
+# Create an empty directory, change into it, and then execute this
+# function.
+simulate_git() {
+    git init .
+    mkdir -p pulumi/cicd
+    cat << EOF > pulumi/cicd/Pulumi.yaml
+name: cicd
+runtime: python
+description: Cicd Infrastructure
+EOF
+
+    cat << EOF > pulumi/cicd/Pulumi.production.yaml
+config:
+  aws:region: us-east-1
+EOF
+
+    cat << EOF > pulumi/cicd/Pulumi.testing.yaml
+config:
+  aws:region: us-east-1
+EOF
+
+    git add .
+    git commit -m "initial commit"
+    git branch -m "main"
+    git branch rc # Create an RC branch, but don't check it out
+
+    # Make another change to `main`. Pretend this is a PR that has merged
+    echo "Hello World" > README.md
+    git add README.md
+    git commit -m "hello"
+
+    # Simulate a new release candidate with some artifact versions
+    # added to the configuration files.
+    git checkout rc
+    git merge --no-commit --no-ff --strategy=ort --strategy-option=theirs --allow-unrelated-histories main
+    yq eval --inplace '.config."cicd:artifacts".foo = "1.2.2"' pulumi/cicd/Pulumi.production.yaml
+    yq eval --inplace '.config."cicd:artifacts".foo = "1.2.2"' pulumi/cicd/Pulumi.testing.yaml
+    git add .
+    git commit -m "Updated artifacts"
+
+    # Create an "out of band" commit to rc directly. In general, this
+    # shouldn't be needed, but we've had to do it on occasion to fix
+    # up issues. The point of this is to ensure that no matter what is
+    # on the rc branch, the content from main should take
+    # priority. We'll make a change that conflicts with what's on
+    # main, and then assert that it ultimately gets fixed up properly.
+    echo "Hola Mundo" > README.md  # Conflict with main!
+    git add README.md
+    git commit -m "Spanish is cool"
+
+    # Make another change to main
+    git checkout main
+    echo "===" >> README.md
+    git add README.md
+    git commit -m "fix markdown formatting"
+
+    # At this point, we have a main and an rc branch, are checked out
+    # on main, and have a change that has not yet been merged to the
+    # rc branch. This is the state this plugin will expect the
+    # repository to be in when it runs.
 }
 
 @test "Create an RC" {
@@ -37,45 +103,82 @@ teardown() {
     stub buildkite-agent \
          "artifact download foo.json . : echo '${artifact_content}' > foo.json"
 
+    stub mktemp \
+         ": touch /tmp/tmp.000000 && echo '/tmp/tmp.000000'" \
+         ": touch /tmp/tmp.000001 && echo '/tmp/tmp.000001'"
+
+    # We use yq (installed in the testing container) to simulate
+    # Pulumi... might be worth just using yq in the real code, as
+    # well.
     stub pulumi \
          "login : echo 'Logged In'" \
-         "config get artifacts --cwd=pulumi/cicd --stack=myorg/cicd/production : echo '{}'" \
-         "config set --path artifacts.foo 1.2.3 --cwd=pulumi/cicd --stack=myorg/cicd/production : echo 'set foo in production'" \
-         "config set --path artifacts.bar 4.5.6 --cwd=pulumi/cicd --stack=myorg/cicd/production : echo 'set bar in production'" \
-         "config get artifacts --cwd=pulumi/cicd --stack=myorg/cicd/testing : echo '{}'" \
-         "config set --path artifacts.foo 1.2.3 --cwd=pulumi/cicd --stack=myorg/cicd/testing : echo 'set foo in testing'" \
-         "config set --path artifacts.bar 4.5.6 --cwd=pulumi/cicd --stack=myorg/cicd/testing : echo 'set bar in testing'"
-
-    stub git \
-         "remote set-branches --add origin rc : echo 'set-branches'" \
-         "fetch --depth=1 origin rc : echo 'fetch rc'" \
-         "checkout rc : echo 'checking out rc'" \
-         "config user.name 'Testy McTestface' : echo 'set user.name'" \
-         "config user.email tests@example.com : echo 'set user.email'" \
-         "merge --no-ff --no-commit --strategy=recursive --strategy-option=ours --allow-unrelated-histories main : echo 'begin merge'" \
-         "show main:pulumi/cicd/Pulumi.production.yaml : echo 'FAKE PRODUCTION STACK CONFIGURATION'" \
-         "add --verbose pulumi/cicd/Pulumi.production.yaml : echo 'add stack file'" \
-         "show main:pulumi/cicd/Pulumi.testing.yaml : echo 'FAKE TESTING STACK CONFIGURATION'" \
-         "add --verbose pulumi/cicd/Pulumi.testing.yaml : echo 'add stack file'" \
-         "commit --message=\"Create new release candidate with updated deployment artifacts\n\nUpdated the following artifact versions:\n\n- foo => 1.2.3\n- bar => 4.5.6\n\nGenerated from blahblah\" : echo 'commit'" \
-         "--no-pager show : echo 'show commit'" \
-         "push --verbose : echo 'push'"
+         "config get artifacts --cwd=pulumi/cicd --config-file=/tmp/tmp.000000.yaml --stack=myorg/cicd/production : yq eval '.config.\"cicd:artifacts\"' --output-format=json /tmp/tmp.000000.yaml" \
+         "config set --path artifacts.foo 1.2.2 --cwd=pulumi/cicd --stack=myorg/cicd/production : yq eval --inplace '.config.\"cicd:artifacts\".foo = \"1.2.2\"' pulumi/cicd/Pulumi.production.yaml" \
+         "config set --path artifacts.foo 1.2.3 --cwd=pulumi/cicd --stack=myorg/cicd/production : yq eval --inplace '.config.\"cicd:artifacts\".foo = \"1.2.3\"' pulumi/cicd/Pulumi.production.yaml" \
+         "config set --path artifacts.bar 4.5.6 --cwd=pulumi/cicd --stack=myorg/cicd/production : yq eval --inplace '.config.\"cicd:artifacts\".bar = \"4.5.6\"' pulumi/cicd/Pulumi.production.yaml" \
+         "config get artifacts --cwd=pulumi/cicd --config-file=/tmp/tmp.000001.yaml --stack=myorg/cicd/testing : yq eval '.config.\"cicd:artifacts\"' --output-format=json /tmp/tmp.000001.yaml" \
+         "config set --path artifacts.foo 1.2.2 --cwd=pulumi/cicd --stack=myorg/cicd/testing : yq eval --inplace '.config.\"cicd:artifacts\".foo = \"1.2.2\"' pulumi/cicd/Pulumi.testing.yaml" \
+         "config set --path artifacts.foo 1.2.3 --cwd=pulumi/cicd --stack=myorg/cicd/testing : yq eval --inplace '.config.\"cicd:artifacts\".foo = \"1.2.3\"' pulumi/cicd/Pulumi.testing.yaml" \
+         "config set --path artifacts.bar 4.5.6 --cwd=pulumi/cicd --stack=myorg/cicd/testing : yq eval --inplace '.config.\"cicd:artifacts\".bar = \"4.5.6\"' pulumi/cicd/Pulumi.testing.yaml"
 
     # We have to be able to write the downloaded artifact file
     # into the directory; hard to do that when it's mounted read-only
     script="${PWD}/hooks/command"
     cd "${BATS_TMPDIR}"
 
-    # Add some expected directory structure
-    mkdir -p pulumi/cicd/
+    git config --global user.name "${GIT_AUTHOR_NAME}"
+    git config --global user.email "${GIT_AUTHOR_EMAIL}"
 
+    # Create a repository to work on
+    mkdir fake_repo
+    (
+        cd fake_repo
+        simulate_git
+    )
+
+    # Create a shallow clone of that repository; we'll operate out of
+    # this checkout for the remainder of the test
+    git clone --depth=1 "file://$(pwd)/fake_repo" fake_checkout
+    cd fake_checkout
+
+    # Assert that the checked-out branch is a "grafted" commit
+    # (because we're using a shallow clone)
+    run git log --oneline --decorate --max-count=1
+    assert_output --partial "grafted"
+
+    # Now, actually run the command
     run "${script}"
-
     assert_success
 
+expected_stack_config=$(
+        cat << EOF
+config:
+  aws:region: us-east-1
+  cicd:artifacts:
+    foo: 1.2.3
+    bar: 4.5.6
+EOF
+                 )
+
+    # Basic sanity check to ensure that our configuration files look
+    # like we expect.
+    assert_equal "$(cat pulumi/cicd/Pulumi.production.yaml)" "${expected_stack_config}"
+    assert_equal "$(cat pulumi/cicd/Pulumi.testing.yaml)" "${expected_stack_config}"
+
+    expected_readme=$(cat << EOF
+Hello World
+===
+EOF
+                   )
+
+    # Basic sanity check to ensure that changes from the main branch
+    # are preferred.
+    assert_equal "$(cat README.md)" "${expected_readme}"
+
+
     unstub buildkite-agent
+    unstub mktemp
     unstub pulumi
-    unstub git
 }
 
 @test "Ensure that a file is required" {

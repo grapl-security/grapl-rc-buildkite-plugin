@@ -38,7 +38,10 @@ test-shell:
 
 .PHONY: test-plugin
 test-plugin:
-	docker-compose run --rm plugin-tester
+	# Only running `build` here to ensure we have our latest changes
+	# to the plugin-tester container; see plugin-tester.Dockerfile for
+	# more.
+	docker-compose build && docker-compose run --rm plugin-tester
 
 .PHONY: all
 all: format lint test

@@ -79,19 +79,41 @@ had_new_artifacts() {
     return 0
 }
 
-# Returns a JSON object for the `artifacts` configuration key of the
-# given stack reference, or `{}` if the key is not present.
-#
-# By convention, we store all our pinned artifact versions in Pulumi
-# config in this manner.
-existing_artifacts() {
-    local -r stack_ref="${1}"
-    local -r root_dir="${2}"
+# rc_artifacts grapl/grapl/testing grapl
+
+# Retrieve the `artifacts` object as a JSON string from the given stack from the rc branch
+rc_artifacts() {
+    local _stack_ref="${1}"
+    local _root_dir="${2}"
+
+    # => "pulumi/grapl/Pulumi.testing.yaml"
+    _stack_file_path="$(stack_file_path "${_stack_ref}" "${_root_dir}")"
+
+    # => "/tmp/tmp.XXXXXXX.yaml"
+    _file_path="$(fetch_rc_config "${_stack_file_path}")"
 
     pulumi config get artifacts \
-        --cwd="$(project_directory "${stack_ref}" "${root_dir}")" \
-        --stack="${stack_ref}" ||
-        echo "{}"
+        --cwd="$(project_directory "${_stack_ref}" "${_root_dir}")" \
+        --config-file="${_file_path}" \
+        --stack="${_stack_ref}" || echo '{}'
+}
+
+# Retrieve the given stack configuration file from the rc branch into
+# a temp file and return the path to that temp file.
+fetch_rc_config() {
+
+    # e.g., `pulumi/grapl/Pulumi.testing.yaml`
+    local _stack_file_path="${1}"
+
+    # We would use `mktemp --suffix=.yaml`, but Busybox `mktemp`
+    # doesn't recognize this flag. (We have to have the `.yaml`
+    # extension so Pulumi can interact with it properly.)
+    _temp_file="$(mktemp)"
+    mv "${_temp_file}" "${_temp_file}.yaml"
+    local _temp_file="${_temp_file}.yaml"
+
+    git show "origin/rc:${_stack_file_path}" > "${_temp_file}"
+    echo "${_temp_file}"
 }
 
 # Given a stack reference, a root directory, and a flat JSON object of
@@ -118,23 +140,11 @@ update_stack_config_for_commit() {
     # First, we want to preserve any artifact versions that are
     #already in the `rc` branch.
     echo -e "--- Extracting pinned artifact versions from rc branch"
-    existing_rc_artifacts="$(existing_artifacts "${stack_ref}" "${root_dir}")"
+    existing_rc_artifacts="$(rc_artifacts "${stack_ref}" "${root_dir}")"
     jq '.' <<< "${existing_rc_artifacts}"
 
-    # Now that we've captured the artifact versions from this version
-    # of the config file, we'll copy back the original contents of the
-    # config from the `main` branch.
-    #
-    # The idea is that if we add new, non-artifact configuration during
-    # the course of normal development, we want to carry that over to the
+    # Now we need to add back the artifact versions that were on the
     # `rc` branch.
-    echo -e "--- Restoring config file from main branch"
-    git show "main:${stack_file}" > "${stack_file}"
-    cat "${stack_file}"
-
-    # Now that we have our base configuration reestablished, we need
-    # to add back the artifact versions that were on the `rc` branch
-    # already.
     echo -e "--- Adding pinned artifacts back to config file"
     add_artifacts "${stack_ref}" "${root_dir}" "${existing_rc_artifacts}"
     cat "${stack_file}"
@@ -192,11 +202,10 @@ create_rc() {
     git config user.name "${GIT_AUTHOR_NAME}"
     git config user.email "${GIT_AUTHOR_EMAIL}"
 
-    # We use the ort/ours strategy here to preserve the
-    # conflicts from the rc branch preferentially (this should only
-    # involve the Pulumi stack config files, which is exactly what we
-    # want). As we process the files further, we'll resolve any
-    # semantic changes we truly wish to preserve.
+    # We use the ort/theirs strategy to ensure that we always get the
+    # changes from the `main` branch here in the `rc` branch. We will
+    # want to preserve the artifact pins we have in the `rc` branch,
+    # but we will handle those as special cases a bit later.
     #
     # `--allow-unrelated-histories` will allow us to perform a merge,
     # even though we've only shallowly-fetched our `main` and `rc`
@@ -207,7 +216,7 @@ create_rc() {
         --no-ff \
         --no-commit \
         --strategy=ort \
-        --strategy-option=ours \
+        --strategy-option=theirs \
         --allow-unrelated-histories \
         main
 
