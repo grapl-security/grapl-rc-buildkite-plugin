@@ -228,7 +228,7 @@ create_rc() {
     echo -e "--- :git: Finalizing commit"
     git commit \
         --message="$(commit_message "${new_artifacts}")"
-    git --no-pager show
+    git --no-pager show -m
 
     # Finally, push it up to Github!
     if is_real_run; then

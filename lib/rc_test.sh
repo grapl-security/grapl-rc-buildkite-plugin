@@ -261,7 +261,7 @@ git add --verbose pulumi/cicd/Pulumi.testing.yaml
 git commit --message=Create new release candidate
 
 Generated from https://buildkite.com/grapl/pipeline-infrastructure-verify/builds/2112
-git --no-pager show
+git --no-pager show -m
 git push --verbose
 EOF
     )
