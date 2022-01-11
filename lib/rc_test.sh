@@ -145,22 +145,6 @@ test_had_new_artifacts() {
         "had_new_artifacts ${input}"
 }
 
-# test_existing_artifacts_with_artifacts() {
-#     actual="$(EXISTING_ARTIFACTS='{"app1":"v1.0.0"}' existing_artifacts myorg/cicd/production pulumi)"
-#     assertEquals '{"app1":"v1.0.0"}' "${actual}"
-#     assertEquals \
-#         "pulumi config get artifacts --cwd=pulumi/cicd --stack=myorg/cicd/production" \
-#         "$(recorded_commands)"
-# }
-
-# test_existing_artifacts_without_artifacts() {
-#     actual="$(existing_artifacts myorg/cicd/production pulumi)"
-#     assertEquals "{}" "${actual}"
-#     assertEquals \
-#         "pulumi config get artifacts --cwd=pulumi/cicd --stack=myorg/cicd/production" \
-#         "$(recorded_commands)"
-# }
-
 test_update_stack_config_for_commit_with_new_artifacts_without_existing() {
     update_stack_config_for_commit "myorg/cicd/production" pulumi '{"app1":"v9.9.9","app2":"v1.0alpha"}'
 
