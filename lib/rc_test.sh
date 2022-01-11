@@ -36,6 +36,13 @@ git() {
     echo "${FUNCNAME[0]} $*" >> "${ALL_COMMANDS}"
 }
 
+mktemp() {
+    # Note: we don't get arguments
+    echo "${FUNCNAME[0]}" >> "${ALL_COMMANDS}"
+
+    touch "/tmp/tmp.XXXXXXXXXX" && echo "/tmp/tmp.XXXXXXXXXX"
+}
+
 recorded_commands() {
     if [ -f "${ALL_COMMANDS}" ]; then
         cat "${ALL_COMMANDS}"
@@ -138,29 +145,14 @@ test_had_new_artifacts() {
         "had_new_artifacts ${input}"
 }
 
-test_existing_artifacts_with_artifacts() {
-    actual="$(EXISTING_ARTIFACTS='{"app1":"v1.0.0"}' existing_artifacts myorg/cicd/production pulumi)"
-    assertEquals '{"app1":"v1.0.0"}' "${actual}"
-    assertEquals \
-        "pulumi config get artifacts --cwd=pulumi/cicd --stack=myorg/cicd/production" \
-        "$(recorded_commands)"
-}
-
-test_existing_artifacts_without_artifacts() {
-    actual="$(existing_artifacts myorg/cicd/production pulumi)"
-    assertEquals "{}" "${actual}"
-    assertEquals \
-        "pulumi config get artifacts --cwd=pulumi/cicd --stack=myorg/cicd/production" \
-        "$(recorded_commands)"
-}
-
 test_update_stack_config_for_commit_with_new_artifacts_without_existing() {
     update_stack_config_for_commit "myorg/cicd/production" pulumi '{"app1":"v9.9.9","app2":"v1.0alpha"}'
 
     expected=$(
         cat << EOF
-pulumi config get artifacts --cwd=pulumi/cicd --stack=myorg/cicd/production
-git show main:pulumi/cicd/Pulumi.production.yaml
+mktemp
+git show origin/rc:pulumi/cicd/Pulumi.production.yaml
+pulumi config get artifacts --cwd=pulumi/cicd --config-file=/tmp/tmp.XXXXXXXXXX.yaml --stack=myorg/cicd/production
 pulumi config set --path artifacts.app1 v9.9.9 --cwd=pulumi/cicd --stack=myorg/cicd/production
 pulumi config set --path artifacts.app2 v1.0alpha --cwd=pulumi/cicd --stack=myorg/cicd/production
 git add --verbose pulumi/cicd/Pulumi.production.yaml
@@ -175,8 +167,9 @@ test_update_stack_config_for_commit_without_new_artifacts_without_existing() {
 
     expected=$(
         cat << EOF
-pulumi config get artifacts --cwd=pulumi/cicd --stack=myorg/cicd/production
-git show main:pulumi/cicd/Pulumi.production.yaml
+mktemp
+git show origin/rc:pulumi/cicd/Pulumi.production.yaml
+pulumi config get artifacts --cwd=pulumi/cicd --config-file=/tmp/tmp.XXXXXXXXXX.yaml --stack=myorg/cicd/production
 git add --verbose pulumi/cicd/Pulumi.production.yaml
 EOF
     )
@@ -192,8 +185,9 @@ test_update_stack_config_for_commit_with_new_artifacts_with_existing() {
 
     expected=$(
         cat << EOF
-pulumi config get artifacts --cwd=pulumi/cicd --stack=myorg/cicd/production
-git show main:pulumi/cicd/Pulumi.production.yaml
+mktemp
+git show origin/rc:pulumi/cicd/Pulumi.production.yaml
+pulumi config get artifacts --cwd=pulumi/cicd --config-file=/tmp/tmp.XXXXXXXXXX.yaml --stack=myorg/cicd/production
 pulumi config set --path artifacts.app1 v9.9.8 --cwd=pulumi/cicd --stack=myorg/cicd/production
 pulumi config set --path artifacts.app3 0.0.1 --cwd=pulumi/cicd --stack=myorg/cicd/production
 pulumi config set --path artifacts.app1 v9.9.9 --cwd=pulumi/cicd --stack=myorg/cicd/production
@@ -213,8 +207,9 @@ test_update_stack_config_for_commit_without_new_artifacts_with_existing() {
 
     expected=$(
         cat << EOF
-pulumi config get artifacts --cwd=pulumi/cicd --stack=myorg/cicd/production
-git show main:pulumi/cicd/Pulumi.production.yaml
+mktemp
+git show origin/rc:pulumi/cicd/Pulumi.production.yaml
+pulumi config get artifacts --cwd=pulumi/cicd --config-file=/tmp/tmp.XXXXXXXXXX.yaml --stack=myorg/cicd/production
 pulumi config set --path artifacts.app1 v9.9.8 --cwd=pulumi/cicd --stack=myorg/cicd/production
 pulumi config set --path artifacts.app3 0.0.1 --cwd=pulumi/cicd --stack=myorg/cicd/production
 git add --verbose pulumi/cicd/Pulumi.production.yaml
@@ -238,17 +233,19 @@ git fetch --depth=1 origin rc
 git checkout rc
 git config user.name Testy McTestface
 git config user.email tests@example.com
-git merge --no-ff --no-commit --strategy=recursive --strategy-option=ours --allow-unrelated-histories main
-pulumi config get artifacts --cwd=pulumi/cicd --stack=myorg/cicd/production
-git show main:pulumi/cicd/Pulumi.production.yaml
+git merge --no-ff --no-commit --strategy=ort --strategy-option=theirs --allow-unrelated-histories main
+mktemp
+git show origin/rc:pulumi/cicd/Pulumi.production.yaml
+pulumi config get artifacts --cwd=pulumi/cicd --config-file=/tmp/tmp.XXXXXXXXXX.yaml --stack=myorg/cicd/production
 git add --verbose pulumi/cicd/Pulumi.production.yaml
-pulumi config get artifacts --cwd=pulumi/cicd --stack=myorg/cicd/testing
-git show main:pulumi/cicd/Pulumi.testing.yaml
+mktemp
+git show origin/rc:pulumi/cicd/Pulumi.testing.yaml
+pulumi config get artifacts --cwd=pulumi/cicd --config-file=/tmp/tmp.XXXXXXXXXX.yaml --stack=myorg/cicd/testing
 git add --verbose pulumi/cicd/Pulumi.testing.yaml
 git commit --message=Create new release candidate
 
 Generated from https://buildkite.com/grapl/pipeline-infrastructure-verify/builds/2112
-git --no-pager show
+git --no-pager show -m
 git push --verbose
 EOF
     )
