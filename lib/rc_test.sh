@@ -234,6 +234,7 @@ git checkout rc
 git config user.name Testy McTestface
 git config user.email tests@example.com
 git merge --no-ff --no-commit --strategy=ort --strategy-option=theirs --allow-unrelated-histories main
+git diff --staged
 mktemp
 git show origin/rc:pulumi/cicd/Pulumi.production.yaml
 pulumi config get artifacts --cwd=pulumi/cicd --config-file=/tmp/tmp.XXXXXXXXXX.yaml --stack=myorg/cicd/production

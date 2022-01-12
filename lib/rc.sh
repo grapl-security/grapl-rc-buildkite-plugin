@@ -222,6 +222,9 @@ create_rc() {
         --allow-unrelated-histories \
         main
 
+    echo -e "--- :git: The merge so far"
+    log_and_run git diff --staged
+
     for stack_ref in "${stack_references[@]}"; do
         update_stack_config_for_commit "${stack_ref}" "${root_dir}" "${new_artifacts}"
     done
