@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
 # shellcheck source-path=SCRIPTDIR
+source "$(dirname "${BASH_SOURCE[0]}")/log.sh"
+# shellcheck source-path=SCRIPTDIR
 source "$(dirname "${BASH_SOURCE[0]}")/json_tools.sh"
 # shellcheck source-path=SCRIPTDIR
 source "$(dirname "${BASH_SOURCE[0]}")/util.sh"
@@ -40,7 +42,7 @@ add_artifacts() {
     # See https://git.savannah.gnu.org/cgit/bash.git/tree/CHANGES?id=3ba697465bc74fab513a26dea700cc82e9f4724e#n878
     for line in "${lines[@]+${lines[@]}}"; do
         IFS=$'\t' read -r key value <<< "${line}"
-        pulumi config set \
+        log_and_run pulumi config set \
             --path "artifacts.${key}" \
             "${value}" \
             --cwd="$(project_directory "${stack_ref}" "${root_dir}")" \
@@ -92,7 +94,7 @@ rc_artifacts() {
     # => "/tmp/tmp.XXXXXXX.yaml"
     _file_path="$(fetch_rc_config "${_stack_file_path}")"
 
-    pulumi config get artifacts \
+    log_and_run pulumi config get artifacts \
         --cwd="$(project_directory "${_stack_ref}" "${_root_dir}")" \
         --config-file="${_file_path}" \
         --stack="${_stack_ref}" || echo '{}'
@@ -112,7 +114,7 @@ fetch_rc_config() {
     mv "${_temp_file}" "${_temp_file}.yaml"
     local _temp_file="${_temp_file}.yaml"
 
-    git show "origin/rc:${_stack_file_path}" > "${_temp_file}"
+    log_and_run git show "origin/rc:${_stack_file_path}" > "${_temp_file}"
     echo "${_temp_file}"
 }
 
@@ -159,7 +161,7 @@ update_stack_config_for_commit() {
     # Add the updated configuration file to our already-in-progress merge
     # commit.
     echo -e "--- :git: Adding config file to in-progress merge commit"
-    git add --verbose "${stack_file}"
+    log_and_run git add --verbose "${stack_file}"
 }
 
 create_rc() {
@@ -179,7 +181,7 @@ create_rc() {
 
     # We have to log in before we can update any configuration values.
     echo -e "--- :pulumi: Logging in to Pulumi"
-    pulumi login
+    log_and_run pulumi login
 
     echo -e "--- :git: Checking out the rc branch"
 
@@ -189,9 +191,9 @@ create_rc() {
     #
     # See the `--allow-unrelated-histories` option to `git merge`
     # below, too.
-    git remote set-branches --add origin rc
-    git fetch --depth=1 origin rc
-    git checkout rc
+    log_and_run git remote set-branches --add origin rc
+    log_and_run git fetch --depth=1 origin rc
+    log_and_run git checkout rc
 
     echo -e "--- :git: Begin merge of main branch to rc"
     # TODO: For some as-yet unknown reason, it appears that we MUST
@@ -199,8 +201,8 @@ create_rc() {
     # effect. Simply having the values in the environment doesn't
     # work, nor does specifying a value at commit-time with
     # `--author`.
-    git config user.name "${GIT_AUTHOR_NAME}"
-    git config user.email "${GIT_AUTHOR_EMAIL}"
+    log_and_run git config user.name "${GIT_AUTHOR_NAME}"
+    log_and_run git config user.email "${GIT_AUTHOR_EMAIL}"
 
     # We use the ort/theirs strategy to ensure that we always get the
     # changes from the `main` branch here in the `rc` branch. We will
@@ -212,7 +214,7 @@ create_rc() {
     # branches; they will *appear* unrelated based on the current
     # state of the repository, but we know they really are related in
     # a full checkout.
-    git merge \
+    log_and_run git merge \
         --no-ff \
         --no-commit \
         --strategy=ort \
@@ -226,14 +228,14 @@ create_rc() {
 
     # Finalize the commit, with a helpful, metadata-laden commit message.
     echo -e "--- :git: Finalizing commit"
-    git commit \
+    log_and_run git commit \
         --message="$(commit_message "${new_artifacts}")"
-    git --no-pager show -m
+    log_and_run git --no-pager show -m
 
     # Finally, push it up to Github!
     if is_real_run; then
         echo -e "--- :github: Pushing rc branch to Github"
-        git push --verbose
+        log_and_run git push --verbose
     else
         echo -e "--- :no_good: Would have pushed rc branch to Github"
     fi
