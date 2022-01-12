@@ -56,7 +56,7 @@ practices develop over time.
 steps:
   - label: ":medal: Create new release candidate"
     plugins:
-      - grapl-security/grapl-rc#v0.1.4:
+      - grapl-security/grapl-rc#v0.1.5:
           project_root_dir: pulumi
           artifact_file: all_artifacts.json
           stacks:
