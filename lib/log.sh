@@ -1,7 +1,44 @@
 #!/usr/bin/env bash
 
-log() {
+# Various logging functions and helpers to make logging nice.
+
+# ANSI Formatting Codes
+########################################################################
+# Because who wants to remember all those fiddly details?
+
+# CSI = "Control Sequence Introducer"
+CSI="\e["
+END=m
+
+NORMAL=0
+BOLD=1
+
+WHITE=37
+
+RESET="${CSI}${NORMAL}${END}"
+
+function _bold_color() {
+    color="${1}"
+    shift
+    echo "${CSI}${BOLD};${color}${END}${*}${RESET}"
+}
+
+function bright_white() {
+    _bold_color "${WHITE}" "${@}"
+}
+
+# Logging
+########################################################################
+# NOTE: All logs get sent to standard error
+
+function log() {
     echo -e "${@}" >&2
+}
+
+# Handy for logging the exact command to be run, and then running it
+function log_and_run() {
+    log ❯❯ "$(bright_white "$(printf "%q " "${@}")")"
+    "$@"
 }
 
 raise_error() {
