@@ -3,7 +3,7 @@
 load "$BATS_PATH/load.bash"
 
 # Uncomment to enable stub debugging
-# export PULUMI_STUB_DEBUG=/dev/tty
+export PULUMI_STUB_DEBUG=/dev/tty
 # export MKTEMP_STUB_DEBUG=/dev/tty
 # export BUILDKITE_AGENT_STUB_DEBUG=/dev/tty
 
@@ -113,13 +113,13 @@ EOF
     stub pulumi \
          "login : echo 'Logged In'" \
          "config get artifacts --cwd=pulumi/cicd --config-file=/tmp/tmp.000000.yaml --stack=myorg/cicd/production : yq eval '.config.\"cicd:artifacts\"' --output-format=json /tmp/tmp.000000.yaml" \
-         "config set --path artifacts.foo 1.2.2 --cwd=pulumi/cicd --stack=myorg/cicd/production : yq eval --inplace '.config.\"cicd:artifacts\".foo = \"1.2.2\"' pulumi/cicd/Pulumi.production.yaml" \
-         "config set --path artifacts.foo 1.2.3 --cwd=pulumi/cicd --stack=myorg/cicd/production : yq eval --inplace '.config.\"cicd:artifacts\".foo = \"1.2.3\"' pulumi/cicd/Pulumi.production.yaml" \
-         "config set --path artifacts.bar 4.5.6 --cwd=pulumi/cicd --stack=myorg/cicd/production : yq eval --inplace '.config.\"cicd:artifacts\".bar = \"4.5.6\"' pulumi/cicd/Pulumi.production.yaml" \
+         "config set --path artifacts.[\\\"foo\\\"] 1.2.2 --cwd=pulumi/cicd --stack=myorg/cicd/production : yq eval --inplace '.config.\"cicd:artifacts\".foo = \"1.2.2\"' pulumi/cicd/Pulumi.production.yaml" \
+         "config set --path artifacts.[\\\"foo\\\"] 1.2.3 --cwd=pulumi/cicd --stack=myorg/cicd/production : yq eval --inplace '.config.\"cicd:artifacts\".foo = \"1.2.3\"' pulumi/cicd/Pulumi.production.yaml" \
+         "config set --path artifacts.[\\\"bar\\\"] 4.5.6 --cwd=pulumi/cicd --stack=myorg/cicd/production : yq eval --inplace '.config.\"cicd:artifacts\".bar = \"4.5.6\"' pulumi/cicd/Pulumi.production.yaml" \
          "config get artifacts --cwd=pulumi/cicd --config-file=/tmp/tmp.000001.yaml --stack=myorg/cicd/testing : yq eval '.config.\"cicd:artifacts\"' --output-format=json /tmp/tmp.000001.yaml" \
-         "config set --path artifacts.foo 1.2.2 --cwd=pulumi/cicd --stack=myorg/cicd/testing : yq eval --inplace '.config.\"cicd:artifacts\".foo = \"1.2.2\"' pulumi/cicd/Pulumi.testing.yaml" \
-         "config set --path artifacts.foo 1.2.3 --cwd=pulumi/cicd --stack=myorg/cicd/testing : yq eval --inplace '.config.\"cicd:artifacts\".foo = \"1.2.3\"' pulumi/cicd/Pulumi.testing.yaml" \
-         "config set --path artifacts.bar 4.5.6 --cwd=pulumi/cicd --stack=myorg/cicd/testing : yq eval --inplace '.config.\"cicd:artifacts\".bar = \"4.5.6\"' pulumi/cicd/Pulumi.testing.yaml"
+         "config set --path artifacts.[\\\"foo\\\"] 1.2.2 --cwd=pulumi/cicd --stack=myorg/cicd/testing : yq eval --inplace '.config.\"cicd:artifacts\".foo = \"1.2.2\"' pulumi/cicd/Pulumi.testing.yaml" \
+         "config set --path artifacts.[\\\"foo\\\"] 1.2.3 --cwd=pulumi/cicd --stack=myorg/cicd/testing : yq eval --inplace '.config.\"cicd:artifacts\".foo = \"1.2.3\"' pulumi/cicd/Pulumi.testing.yaml" \
+         "config set --path artifacts.[\\\"bar\\\"] 4.5.6 --cwd=pulumi/cicd --stack=myorg/cicd/testing : yq eval --inplace '.config.\"cicd:artifacts\".bar = \"4.5.6\"' pulumi/cicd/Pulumi.testing.yaml"
 
     # We have to be able to write the downloaded artifact file
     # into the directory; hard to do that when it's mounted read-only
