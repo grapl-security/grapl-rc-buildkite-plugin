@@ -81,13 +81,15 @@ tearDown() {
 }
 
 test_add_artifacts_with_artifacts() {
-    add_artifacts myorg/cicd/production pulumi '{"app1":"v1.0.0","app2":"v1.2.0","nested_map":{"k":"v"}}'
+    add_artifacts myorg/cicd/production pulumi \
+        '{"app1":"v1.0.0","app2":"v1.2.0","nested_map":{"k":"v"}, "has.periods": 1}'
 
     expected=$(
         cat << EOF
 pulumi config set --path artifacts.["app1"] v1.0.0 --cwd=pulumi/cicd --stack=myorg/cicd/production
 pulumi config set --path artifacts.["app2"] v1.2.0 --cwd=pulumi/cicd --stack=myorg/cicd/production
 pulumi config set --path artifacts.["nested_map"].["k"] v --cwd=pulumi/cicd --stack=myorg/cicd/production
+pulumi config set --path artifacts.["has.periods"] 1 --cwd=pulumi/cicd --stack=myorg/cicd/production
 EOF
     )
 
