@@ -3,7 +3,7 @@
 load "$BATS_PATH/load.bash"
 
 # Uncomment to enable stub debugging
-export PULUMI_STUB_DEBUG=/dev/tty
+# export PULUMI_STUB_DEBUG=/dev/tty
 # export MKTEMP_STUB_DEBUG=/dev/tty
 # export BUILDKITE_AGENT_STUB_DEBUG=/dev/tty
 
@@ -98,7 +98,7 @@ EOF
     export GIT_AUTHOR_NAME="Testy McTestface"
     export GIT_AUTHOR_EMAIL="tests@example.com"
 
-    artifact_content='{"foo": "1.2.3", "bar": "4.5.6"}'
+    artifact_content='{"foo": "1.2.3", "bar": "4.5.6", "periods.in_key": 1}'
 
     stub buildkite-agent \
          "artifact download foo.json . : echo '${artifact_content}' > foo.json"
@@ -110,16 +110,24 @@ EOF
     # We use yq (installed in the testing container) to simulate
     # Pulumi... might be worth just using yq in the real code, as
     # well.
+
+    # Each plan line represents an expected invocation, with a list of expected
+    # arguments followed by a command to execute in case the arguments matched, 
+    # separated with a colon.
+    # So, in this case, we mock out the changes that each `config set` would perform
+    # on the given Pulumi stack file.
     stub pulumi \
          "login : echo 'Logged In'" \
          "config get artifacts --cwd=pulumi/cicd --config-file=/tmp/tmp.000000.yaml --stack=myorg/cicd/production : yq eval '.config.\"cicd:artifacts\"' --output-format=json /tmp/tmp.000000.yaml" \
          "config set --path artifacts.[\\\"foo\\\"] 1.2.2 --cwd=pulumi/cicd --stack=myorg/cicd/production : yq eval --inplace '.config.\"cicd:artifacts\".foo = \"1.2.2\"' pulumi/cicd/Pulumi.production.yaml" \
          "config set --path artifacts.[\\\"foo\\\"] 1.2.3 --cwd=pulumi/cicd --stack=myorg/cicd/production : yq eval --inplace '.config.\"cicd:artifacts\".foo = \"1.2.3\"' pulumi/cicd/Pulumi.production.yaml" \
          "config set --path artifacts.[\\\"bar\\\"] 4.5.6 --cwd=pulumi/cicd --stack=myorg/cicd/production : yq eval --inplace '.config.\"cicd:artifacts\".bar = \"4.5.6\"' pulumi/cicd/Pulumi.production.yaml" \
+         "config set --path artifacts.[\\\"periods.in_key\\\"] 1 --cwd=pulumi/cicd --stack=myorg/cicd/production : yq eval --inplace '.config.\"cicd:artifacts\".\"periods.in_key\" = 1' pulumi/cicd/Pulumi.production.yaml" \
          "config get artifacts --cwd=pulumi/cicd --config-file=/tmp/tmp.000001.yaml --stack=myorg/cicd/testing : yq eval '.config.\"cicd:artifacts\"' --output-format=json /tmp/tmp.000001.yaml" \
          "config set --path artifacts.[\\\"foo\\\"] 1.2.2 --cwd=pulumi/cicd --stack=myorg/cicd/testing : yq eval --inplace '.config.\"cicd:artifacts\".foo = \"1.2.2\"' pulumi/cicd/Pulumi.testing.yaml" \
          "config set --path artifacts.[\\\"foo\\\"] 1.2.3 --cwd=pulumi/cicd --stack=myorg/cicd/testing : yq eval --inplace '.config.\"cicd:artifacts\".foo = \"1.2.3\"' pulumi/cicd/Pulumi.testing.yaml" \
-         "config set --path artifacts.[\\\"bar\\\"] 4.5.6 --cwd=pulumi/cicd --stack=myorg/cicd/testing : yq eval --inplace '.config.\"cicd:artifacts\".bar = \"4.5.6\"' pulumi/cicd/Pulumi.testing.yaml"
+         "config set --path artifacts.[\\\"bar\\\"] 4.5.6 --cwd=pulumi/cicd --stack=myorg/cicd/testing : yq eval --inplace '.config.\"cicd:artifacts\".bar = \"4.5.6\"' pulumi/cicd/Pulumi.testing.yaml" \
+         "config set --path artifacts.[\\\"periods.in_key\\\"] 1 --cwd=pulumi/cicd --stack=myorg/cicd/testing : yq eval --inplace '.config.\"cicd:artifacts\".\"periods.in_key\" = 1' pulumi/cicd/Pulumi.testing.yaml"
 
     # We have to be able to write the downloaded artifact file
     # into the directory; hard to do that when it's mounted read-only
@@ -157,6 +165,7 @@ config:
   cicd:artifacts:
     foo: 1.2.3
     bar: 4.5.6
+    periods.in_key: 1
 EOF
                  )
 

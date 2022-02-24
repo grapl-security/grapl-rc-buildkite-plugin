@@ -18,6 +18,9 @@ flatten_json() {
     # https://stackoverflow.com/a/37557003
     jq -r '
         # Avoids https://github.com/grapl-security/issue-tracker/issues/864
+        # We were writing an artifact with key "firecracker_kernel.tar.gz" but
+        # by the time it showed up in origin/rc it looked like
+        # {"firecracker_kernel": { "tar": { "gz": $value }}}
         def escape_key: "[\"" + . + "\"]";
 
         . as $in
