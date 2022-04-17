@@ -6,7 +6,7 @@ FROM buildkite/plugin-tester:latest
 #
 # If this ever gets updated, we can remove these two lines
 RUN echo "http://dl-cdn.alpinelinux.org/alpine/edge/main" >> /etc/apk/repositories
-RUN apk update && apk add git=2.35.1-r1
+RUN apk update && apk add git=2.35.2-r0
 
 # Add yq to make it easier to manipulate Pulumi stack files during a test.
 ARG YQ_VERSION=v4.16.2
