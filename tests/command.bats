@@ -55,6 +55,17 @@ EOF
     git add README.md
     git commit -m "hello"
 
+    # Make another commit adding another file. We will ultimately
+    # delete this, in order to ensure that it doesn't persiste in the
+    # rc branch.
+    echo "This is a message you shouldn't be seeing" > some_other_file.txt
+    git add some_other_file.txt
+
+    mkdir -p a/deeply/nested/directory
+    echo "This is another message you shouldn't see" > a/deeply/nested/directory/yet_another_file.txt
+    git add a/deeply/nested/directory/yet_another_file.txt
+    git commit -m "Add yet_another_file.txt"
+
     # Simulate a new release candidate with some artifact versions
     # added to the configuration files.
     git checkout rc
@@ -79,6 +90,11 @@ EOF
     echo "===" >> README.md
     git add README.md
     git commit -m "fix markdown formatting"
+
+    # Make another change to main to delete the files we added earlier
+    git rm some_other_file.txt
+    git rm a/deeply/nested/directory/yet_another_file.txt
+    git commit -m "remove some files"
 
     # At this point, we have a main and an rc branch, are checked out
     # on main, and have a change that has not yet been merged to the
@@ -184,6 +200,12 @@ EOF
     # are preferred.
     assert_equal "$(cat README.md)" "${expected_readme}"
 
+    # The files we deleted on `main` shouldn't be there anymore in `rc`
+    run cat some_other_file.txt
+    assert_failure
+
+    run cat a/deeply/nested/directory/yet_another_file.txt
+    assert_failure
 
     unstub buildkite-agent
     unstub mktemp
