@@ -218,6 +218,21 @@ create_rc() {
         --allow-unrelated-histories \
         main
 
+    echo -e "--- Removing files deleted on 'main' branch"
+    # The `theirs` strategy option we used in our merge only applies
+    # to differences in file blobs; the absence of a file isn't
+    # accounted for. As such, we need to do a bit of manual cleanup to
+    # remove any files from the `rc` branch that were deleted on the
+    # `main` branch.
+    #
+    # Here, we invoke `git diff-tree` recursively (-r) to provide the
+    # full path for all deleted files (--diff-filter=D) across the
+    # entire repository. The file path itself is the final field in
+    # each line, which is what the `awk` invocation isolates.
+    for deleted_file in $(git diff-tree -r rc main --diff-filter=D | awk '{print $NF}'); do
+        log_and_run git rm "${deleted_file}"
+    done
+
     for stack_ref in "${stack_references[@]}"; do
         update_stack_config_for_commit "${stack_ref}" "${root_dir}" "${new_artifacts}"
     done
