@@ -21,9 +21,14 @@ help: ## Print this help
 ########################################################################
 
 .PHONY: lint
+lint: lint-docker
 lint: lint-plugin
 lint: lint-shell
 lint: ## Perform lint checks on all files
+
+.PHONY: lint-docker
+lint-docker: ## Lint Dockerfiles
+	./pants filter --target-type=docker_image :: | xargs ./pants lint
 
 .PHONY: lint-plugin
 lint-plugin: ## Lint the Buildkite plugin metadata

@@ -20,6 +20,10 @@ steps:
         command:
           - make lint-plugin
 
+      - label: ":docker: Lint Dockerfiles"
+        command:
+          - make lint-docker
+
   - group: Testing
     key: testing
     steps:
