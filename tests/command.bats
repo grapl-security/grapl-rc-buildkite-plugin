@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
 
-load "$BATS_PATH/load.bash"
+load "$BATS_PLUGIN_PATH/load.bash"
 
 # Uncomment to enable stub debugging
 # export PULUMI_STUB_DEBUG=/dev/tty
@@ -128,7 +128,7 @@ EOF
     # well.
 
     # Each plan line represents an expected invocation, with a list of expected
-    # arguments followed by a command to execute in case the arguments matched, 
+    # arguments followed by a command to execute in case the arguments matched,
     # separated with a colon.
     # So, in this case, we mock out the changes that each `config set` would perform
     # on the given Pulumi stack file.
