@@ -1,30 +1,37 @@
+---
 env:
   PANTS_CONFIG_FILES: "['pants.toml', 'pants.ci.toml']"
   BUILDKITE_PLUGIN_VAULT_ENV_SECRET_PREFIX: "secret/data/buildkite/env"
 
 steps:
-  - label: ":lint-roller::bash: Lint Shell"
-    command:
-      - make lint-shell
-    plugins:
-      - grapl-security/vault-login#v0.1.2
-      - grapl-security/vault-env#v0.1.0:
-          secrets:
-            - grapl-rc-buildkite-plugin/TOOLCHAIN_AUTH_TOKEN
+  - group: ":lint-roller: Lints"
+    key: lints
+    steps:
+      - label: ":bash: Lint Shell"
+        command:
+          - make lint-shell
+        plugins:
+          - grapl-security/vault-login#v0.1.2
+          - grapl-security/vault-env#v0.1.0:
+              secrets:
+                - grapl-rc-buildkite-plugin/TOOLCHAIN_AUTH_TOKEN
 
-  - label: ":lint-roller::buildkite: Lint Plugin"
-    command:
-      - make lint-plugin
+      - label: ":buildkite: Lint Plugin"
+        command:
+          - make lint-plugin
 
-  - label: ":bash: Unit Test Shell"
-    command:
-      - make test-shell
-    plugins:
-      - grapl-security/vault-login#v0.1.2
-      - grapl-security/vault-env#v0.1.0:
-          secrets:
-            - grapl-rc-buildkite-plugin/TOOLCHAIN_AUTH_TOKEN
+  - group: Testing
+    key: testing
+    steps:
+      - label: ":bash: Unit Test Shell"
+        command:
+          - make test-shell
+        plugins:
+          - grapl-security/vault-login#v0.1.2
+          - grapl-security/vault-env#v0.1.0:
+              secrets:
+                - grapl-rc-buildkite-plugin/TOOLCHAIN_AUTH_TOKEN
 
-  - label: ":lint-roller::buildkite: Test Plugin"
-    command:
-      - make test-plugin
+      - label: ":buildkite: Test Plugin"
+        command:
+          - make test-plugin
