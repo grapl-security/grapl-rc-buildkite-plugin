@@ -1,5 +1,3 @@
-version: "3.8"
-
 x-common-variables:
   read-only-plugin: &read-only-plugin
     # Buildkite containers assume you mount into /plugin

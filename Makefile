@@ -1,4 +1,4 @@
-COMPOSE_USER=$(shell id -u):$(shell id -g)
+DOCKER_COMPOSE_CHECK := docker compose run --rm
 PANTS_SHELL_FILTER := ./pants filter --target-type=shell_sources,shunit2_tests :: | xargs ./pants
 
 .DEFAULT_GOAL=all
@@ -32,7 +32,7 @@ lint-docker: ## Lint Dockerfiles
 
 .PHONY: lint-plugin
 lint-plugin: ## Lint the Buildkite plugin metadata
-	docker-compose run --rm plugin-linter
+	$(DOCKER_COMPOSE_CHECK) plugin-linter
 
 .PHONY: lint-shell
 lint-shell: ## Lint the shell scripts
@@ -66,4 +66,4 @@ test-plugin: ## Test the Buildkite plugin locally (does *not* run a Buildkite pi
 # Only running `build` here to ensure we have our latest changes
 # to the plugin-tester container; see plugin-tester.Dockerfile for
 # more.
-	docker-compose build && docker-compose run --rm plugin-tester
+	docker compose build && $(DOCKER_COMPOSE_CHECK) plugin-tester
