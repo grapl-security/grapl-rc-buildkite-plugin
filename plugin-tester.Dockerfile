@@ -2,10 +2,10 @@ FROM buildkite/plugin-tester:v2.0.0
 
 # We need `git` for our tests, and it must have the 'ort' merge
 # strategy (introduced in 2.33).
-RUN apk add --no-cache git=2.34.2-r0
+RUN apk add --no-cache git=2.34.4-r0
 
 # Add yq to make it easier to manipulate Pulumi stack files during a test.
-ARG YQ_VERSION=v4.25.1
+ARG YQ_VERSION=v4.26.1
 # https://github.com/hadolint/hadolint/wiki/DL3047
 #
 # The `wget` in this image is from busybox, and doesn't support the
