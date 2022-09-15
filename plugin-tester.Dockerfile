@@ -5,7 +5,7 @@ FROM buildkite/plugin-tester:v2.0.0
 RUN apk add --no-cache git=2.34.4-r0
 
 # Add yq to make it easier to manipulate Pulumi stack files during a test.
-ARG YQ_VERSION=v4.26.1
+ARG YQ_VERSION=v4.27.5
 # https://github.com/hadolint/hadolint/wiki/DL3047
 #
 # The `wget` in this image is from busybox, and doesn't support the
