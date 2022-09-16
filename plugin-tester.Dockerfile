@@ -1,4 +1,4 @@
-FROM buildkite/plugin-tester:v2.0.0
+FROM buildkite/plugin-tester:v3.0.0
 
 # We need `git` for our tests, and it must have the 'ort' merge
 # strategy (introduced in 2.33).
