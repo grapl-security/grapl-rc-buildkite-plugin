@@ -2,7 +2,7 @@ FROM buildkite/plugin-tester:v3.0.1
 
 # We need `git` for our tests, and it must have the 'ort' merge
 # strategy (introduced in 2.33).
-RUN apk add --no-cache git=2.34.4-r0
+RUN apk add --no-cache git=2.34.5-r0
 
 # Add yq to make it easier to manipulate Pulumi stack files during a test.
 ARG YQ_VERSION=v4.27.5
